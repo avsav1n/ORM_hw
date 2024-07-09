@@ -94,8 +94,44 @@ def request_info(engine=None, session=None):
     print(table)
     session.close()
 
+def get_shops(input_=None):
+    '''
+    Функция выборки информации по покупкам книг по имени издателя или его id
+    с последующим выводом в терминал
+    '''
+    DSN = f'postgresql://postgres:{os.getenv('PSQLPASS')}@localhost:5432/pypost'
+    engine = sqlalchemy.create_engine(DSN)
+    Session = sessionmaker(engine)
+    with Session() as session:
+        subq = session.query(Book.title, Shop.name, Sale.price, Sale.date_sale).\
+                            select_from(Shop).\
+                            join(Shop.stock).\
+                            join(Stock.book).\
+                            join(Book.publisher).\
+                            join(Stock.sale)
+        if input_.isdigit():
+            result = subq.filter(Publisher.id_pub == int(input_)).all()
+        else:
+            result = subq.filter(Publisher.name == input_).all()
+
+    print('-' * 76)
+    for line in result:
+        v1, v2, v3, v4 = line
+        print(f'| {v1:<40} | {v2:^8} | {v3:<5} | {v4.strftime('%d-%m-%Y')} |')
+    print('-' * 76)
+
 # delete(*alchemy_init())
 # create(*alchemy_init())
 
 # add_data(*alchemy_init())
 # request_info(*alchemy_init())
+
+print(f'{'-'*25}')
+print(f'| {"O’Reilly":<15} | {"1":^3} |')
+print(f'| {"Pearson":<15} | {"2":^3} |')
+print(f'| {"Microsoft Press":<15} | {"3":^3} |')
+print(f'| {"No starch press":<15} | {"4":^3} |')
+print(f'{'-'*25}')
+
+input_ = input('Введите номер ID или имя желаемого автора: ')
+get_shops(input_)
